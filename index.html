@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Можно или нельзя? — игра о границах</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@500;700;800&display=swap">
+<style>
+:root{--bg:#eef3f6;--card:#fff;--ink:#14232e;--mut:#56687a;--line:#cfdbe3;--ok:#1f9d63;--okb:#dff5e9;--no:#d9383a;--nob:#fde6e6;--btn:#14232e;--btnt:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1a22;--card:#1b2d38;--ink:#e8f0f5;--mut:#9db0bf;--line:#2e4452;--ok:#5fd69b;--okb:#143427;--no:#ff7b7b;--nob:#3a1b1b;--btn:#e8f0f5;--btnt:#0f1a22;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1a22;--card:#1b2d38;--ink:#e8f0f5;--mut:#9db0bf;--line:#2e4452;--ok:#5fd69b;--okb:#143427;--no:#ff7b7b;--nob:#3a1b1b;--btn:#e8f0f5;--btnt:#0f1a22;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--ink);font:500 18px/1.4 Onest,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
+main{max-width:520px;margin:0 auto;padding:16px 14px 32px;text-align:center}
+h1{font-size:clamp(30px,8vw,42px);line-height:1.1;margin:8px 0 6px;font-weight:800;letter-spacing:-.02em}
+.dots{display:flex;gap:6px;justify-content:center;margin:6px 0 14px}
+.dots i{width:14px;height:14px;border-radius:50%;background:var(--line)}
+.dots i.ok{background:var(--ok)}.dots i.bad{background:var(--no)}.dots i.cur{outline:3px solid var(--ink);outline-offset:1px}
+.scene{background:var(--card);border:3px solid var(--line);border-radius:28px;padding:22px 14px 18px;margin-bottom:14px;transition:background .2s,border-color .2s}
+.scene.ok{background:var(--okb);border-color:var(--ok)}.scene.bad{background:var(--nob);border-color:var(--no)}
+.big{font-size:clamp(64px,22vw,96px);line-height:1.1;margin-bottom:8px}
+.cap{font-size:clamp(22px,6vw,28px);font-weight:700;line-height:1.2}
+.res{font-size:56px;line-height:1;animation:pop .35s}
+.why{font-size:22px;font-weight:700;margin-top:4px}
+@keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.a{font:800 clamp(20px,5.5vw,26px) Onest,system-ui,sans-serif;border:0;border-radius:22px;padding:22px 8px;min-height:92px;cursor:pointer;color:#fff;box-shadow:0 5px 0 rgba(0,0,0,.25)}
+.a:active:not(:disabled){transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.25)}
+.a:disabled{opacity:.35;cursor:default}
+.a.n{background:#d9383a}.a.y{background:#1f9d63}
+.a span{display:block;font-size:36px;line-height:1.1}
+.btn{font:800 22px Onest,system-ui,sans-serif;background:var(--btn);color:var(--btnt);border:0;border-radius:20px;padding:18px 36px;min-height:64px;cursor:pointer;width:100%;box-shadow:0 5px 0 rgba(0,0,0,.25)}
+.btn:focus-visible,.a:focus-visible{outline:4px solid #3b5bdb;outline-offset:3px}
+.mut{color:var(--mut)}
+.miss{display:flex;gap:10px;align-items:center;text-align:left;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:8px 12px;margin:8px 0;font-size:17px}
+.miss b{font-size:30px}
+.theme{position:fixed;right:10px;top:calc(env(safe-area-inset-top,0px) + 8px);background:var(--card);border:1px solid var(--line);color:var(--ink);border-radius:20px;width:38px;height:38px;cursor:pointer;font-size:17px;z-index:20}
+@media (prefers-reduced-motion:reduce){.res{animation:none}}
+</style>
+</head>
+<body>
+<button class="theme" id="theme" aria-label="Сменить тему">◐</button>
+<main id="app"></main>
+<script>
+var S=[
+["📱👀","Читает чужие сообщения",0,"Это личное"],
+["🙋✏️","Спросил: «Можно ручку?»",1,"Он спросил"],
+["😟🤗","Обнимает, хотя говорят «нет»",0,"«Нет» значит нет"],
+["😡📢","Кричит на друга",0,"Криком не решить"],
+["🧘💬","Пауза и спокойный разговор",1,"Спокойно лучше"],
+["📸🚫","Выложил фото без спроса",0,"Нужно согласие"],
+["🙅👍","Сказал «нет», и его поняли",1,"«Нет» уважают"],
+["😠👉","Обзывает и унижает",0,"Это обида"],
+["👂💛","Слушает и не перебивает",1,"Так уважают"],
+["🎁🤝","Делится, потому что сам хочет",1,"Он сам решил"],
+["😈🔒","Грозит выдать секрет",0,"Это шантаж"],
+["🙏😊","Просит прощения",1,"Это сила"],
+["🚪🙅","Входит без стука",0,"Сначала стук"],
+["🚪✊","Стучит и ждёт ответа",1,"Он ждёт"],
+["😒🤐","Молча копит обиду",0,"Лучше сказать"],
+["🗣️🙂","«Мне неприятно, прошу не надо»",1,"Спокойно о себе"]];
+var app=document.getElementById("app"),q,i,sc,miss,done;
+function sh(a){return a.slice().sort(function(){return Math.random()-.5})}
+function start(){app.innerHTML='<div class="big" style="font-size:88px;margin-top:30px">🛡️🙂</div><h1>Можно или нельзя?</h1><p class="mut" style="font-size:22px;margin:0 0 28px">✋ или 👍 — выбирай!</p><button class="btn" id="go">▶ Играть</button>';document.getElementById("go").onclick=newGame}
+function newGame(){q=sh(S).slice(0,10);i=0;sc=0;miss=[];scene()}
+function dots(){var h='<div class="dots" aria-label="Вопрос '+(i+1)+' из 10">';for(var k=0;k<10;k++){var c=k<i?(q[k].r?"ok":"bad"):k===i?"cur":"";h+='<i class="'+c+'"></i>'}return h+'</div>'}
+function scene(){
+ var s=q[i];done=false;
+ app.innerHTML=dots()+'<div class="scene" id="sc"><div class="big">'+s[0]+'</div><div class="cap">'+s[1]+'</div><div id="fb" style="min-height:96px"></div></div>'+
+ '<div class="row"><button class="a n" id="bn"><span>✋</span>Нельзя</button><button class="a y" id="by"><span>👍</span>Можно</button></div>';
+ document.getElementById("bn").onclick=function(){ans(0)};document.getElementById("by").onclick=function(){ans(1)}}
+function ans(v){
+ if(done)return;done=true;
+ var s=q[i],r=v===s[2];s.r=r;if(r)sc++;else miss.push(s);
+ document.getElementById("bn").disabled=document.getElementById("by").disabled=true;
+ document.getElementById("sc").className="scene "+(r?"ok":"bad");
+ document.getElementById("fb").innerHTML='<div class="res">'+(r?"✅":"❌")+'</div><div class="why">'+(s[2]?"Можно: ":"Нельзя: ")+s[3]+'</div>';
+ var row=document.querySelector(".row");row.innerHTML='<button class="btn" id="nx" style="grid-column:1/3">'+(i===9?"🏁 Готово":"Дальше ▶")+'</button>';
+ var n=document.getElementById("nx");n.onclick=function(){if(i===9)end();else{i++;scene()}};n.focus()}
+function end(){
+ var e=sc>=9?["🏆","Супер!"]:sc>=7?["🌟","Отлично!"]:sc>=5?["🙂","Хорошо!"]:["💪","Давай ещё!"];
+ var h='<div class="big" style="font-size:96px;margin-top:20px">'+e[0]+'</div><h1>'+e[1]+'</h1><p style="font-size:34px;font-weight:800;margin:0 0 8px">'+sc+' из 10</p>';
+ if(miss.length){h+='<p class="mut" style="margin:14px 0 0">Запомни:</p>';miss.slice(0,3).forEach(function(m){h+='<div class="miss"><b>'+m[0]+'</b><span>'+(m[2]?"Можно: ":"Нельзя: ")+m[3]+'</span></div>'})}
+ h+='<p style="margin-top:20px"><button class="btn" id="ag">🔁 Ещё раз</button></p>';
+ app.innerHTML=h;document.getElementById("ag").onclick=newGame}
+document.addEventListener("keydown",function(e){var b=e.key==="ArrowLeft"?document.getElementById("bn"):e.key==="ArrowRight"?document.getElementById("by"):null;if(b&&!b.disabled)b.click()});
+document.getElementById("theme").onclick=function(){var d=document.documentElement,c=d.getAttribute("data-theme");var dark=c?c==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches;d.setAttribute("data-theme",dark?"light":"dark")};
+start();
+</script>
+</body>
+</html>
